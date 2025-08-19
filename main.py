@@ -18,6 +18,7 @@ class SongMixGenerator:
         self.songs = []
         self.songs_by_style = defaultdict(list)
     
+    # loads all songs from the CSV file we have saved
     def load_songs_from_csv(self, filename: str):
         """Load songs from CSV file"""
         try:
@@ -52,6 +53,7 @@ class SongMixGenerator:
         
         return True
     
+    # seperate the camelot into a number and a letter
     def parse_camelot(self, camelot: str) -> Tuple[int, str]:
         """Parse camelot string into number and letter"""
         if len(camelot) < 2:
@@ -73,6 +75,7 @@ class SongMixGenerator:
             
         return number, letter
     
+    # checks if 2 songs can mix together
     def can_mix(self, camelot1: str, camelot2: str) -> bool:
         """Check if two songs can be mixed based on Camelot rules"""
         try:
@@ -98,108 +101,67 @@ class SongMixGenerator:
         
         return False
     
-    def get_user_input(self) -> Tuple[int, List[str]]:
-        """Get user input for max songs and style order"""
-        while True:
-            try:
-                max_songs = int(input("Enter maximum number of distinct songs to use: "))
-                if max_songs <= 0:
-                    print("Please enter a positive number.")
-                    continue
-                break
-            except ValueError:
-                print("Please enter a valid number.")
+    # generates a mep of the song combos that can be used for a mix
+    def generate_mixes_map(self, max_songs: int, style_order: List[str]) -> Dict[frozenset, List[List[Song]]]:
+        """Generate all valid mixes and store them in a hashmap by distinct song sets"""
+        mixes_map = {}
         
-        while True:
-            styles_input = input("Enter the order of styles (comma-separated): ").strip()
-            if not styles_input:
-                print("Please enter at least one style.")
-                continue
-            
-            styles = [style.strip().lower() for style in styles_input.split(',')]
-            
-            # Check if all styles exist in our database
-            missing_styles = []
-            for style in styles:
-                if style not in self.songs_by_style:
-                    missing_styles.append(style)
-            
-            if missing_styles:
-                print(f"Warning: These styles are not found in the database: {missing_styles}")
-                available_styles = list(self.songs_by_style.keys())
-                print(f"Available styles: {', '.join(available_styles)}")
-                continue_anyway = input("Continue anyway? (y/n): ").strip().lower()
-                if continue_anyway != 'y':
-                    continue
-            
-            break
-        
-        return max_songs, styles
-    
-    def find_all_mixes(self, max_songs: int, style_order: List[str]) -> List[List[Song]]:
-        """Find all possible mixes using dynamic programming principles"""
-        if not style_order:
-            return []
-        
-        # Get songs for each required style
-        songs_for_styles = []
-        for style in style_order:
-            style_songs = self.songs_by_style.get(style, [])
-            if not style_songs:
-                print(f"No songs found for style: {style}")
-                return []
-            songs_for_styles.append(style_songs)
-        
-        all_valid_mixes = []
-        
-        # Generate all possible combinations of songs up to max_songs
+        # Generate all combinations of distinct songs up to max_songs
         for num_distinct_songs in range(1, min(max_songs, len(self.songs)) + 1):
-            # Get all combinations of distinct songs
             for song_combination in itertools.combinations(self.songs, num_distinct_songs):
                 song_set = set(song_combination)
                 
-                # Try to create a mix using only these songs
+                # Generate valid mixes for this set
                 valid_mixes = self._find_mixes_with_song_set(song_set, style_order)
-                all_valid_mixes.extend(valid_mixes)
+                
+                if valid_mixes:
+                    # Only store sets that have at least one valid mix
+                    mixes_map[frozenset(song_set)] = valid_mixes
         
-        return all_valid_mixes
-    
+        return mixes_map
+
+    # find all possible mixes with a given set of songs
     def _find_mixes_with_song_set(self, song_set: Set[Song], style_order: List[str]) -> List[List[Song]]:
-        """Find all valid mixes using only songs from the given set"""
-        # Use dynamic programming approach
+        """Find all valid mixes using only songs from the given set,
+        ensuring all songs in the set are used at least once"""
+        
+        # Original DP function
         memo = {}
         
         def dp(position: int, last_song: Song = None) -> List[List[Song]]:
-            """Recursive function with memoization"""
             if position == len(style_order):
-                return [[]]  # Empty list means we've successfully filled all positions
+                return [[]]
             
-            # Create a key for memoization
             key = (position, last_song.name if last_song else None)
             if key in memo:
                 return memo[key]
             
             required_style = style_order[position]
             valid_mixes = []
-            
-            # Find songs in our set that have the required style
             candidates = [song for song in song_set if required_style in song.styles]
             
             for candidate in candidates:
-                # Check if this song can mix with the last song
                 if last_song is None or self.can_mix(last_song.camelot, candidate.camelot):
-                    # Recursively find mixes for the remaining positions
                     remaining_mixes = dp(position + 1, candidate)
-                    
-                    # Add current candidate to each valid remaining mix
                     for remaining_mix in remaining_mixes:
                         valid_mixes.append([candidate] + remaining_mix)
             
             memo[key] = valid_mixes
             return valid_mixes
         
-        return dp(0)
+        # Generate all mixes
+        all_mixes = dp(0)
+        
+        # Filter to ensure all songs in the set are used at least once
+        filtered_mixes = []
+        for mix in all_mixes:
+            mix_set = set(mix)
+            if mix_set == song_set:
+                filtered_mixes.append(mix)
+        
+        return filtered_mixes
     
+    # displays all mixes
     def display_results(self, mixes: List[List[Song]], max_songs: int, style_order: List[str]):
         """Display the results"""
         if not mixes:
@@ -228,33 +190,58 @@ class SongMixGenerator:
             print("-" * 40)
 
 def main():
+    # === Configuration (set in code) ===
+    csv_file_path = "songs.csv"                # CSV file path
+    max_songs = 3                              # Maximum number of distinct songs to use
+    style_order = ["hikk", "fast", "drop", "fast", "slow", "drop"]    # Order of styles
+
     generator = SongMixGenerator()
-    
+
     # Load songs from CSV
-    filename = input("Enter the CSV filename (or press Enter for 'songs.csv'): ").strip()
-    if not filename:
-        filename = "songs.csv"
-    
-    if not generator.load_songs_from_csv(filename):
+    if not generator.load_songs_from_csv(csv_file_path):
         return
-    
     if not generator.songs:
         print("No songs loaded. Please check your CSV file.")
         return
-    
+
     print(f"\nAvailable styles: {', '.join(generator.songs_by_style.keys())}")
-    
-    # Get user input
-    max_songs, style_order = generator.get_user_input()
-    
-    print(f"\nSearching for mixes with max {max_songs} distinct songs...")
-    print(f"Style order: {' -> '.join(style_order)}")
-    
-    # Find all possible mixes
-    mixes = generator.find_all_mixes(max_songs, style_order)
-    
-    # Display results
-    generator.display_results(mixes, max_songs, style_order)
+    print(f"Using max_songs = {max_songs}")
+    print(f"Style order = {' -> '.join(style_order)}")
+
+    # === Step 1: generate hashmap of valid mixes ===
+    print("\nGenerating all valid mixes...")
+    mixes_map = generator.generate_mixes_map(max_songs, style_order)
+
+    if not mixes_map:
+        print("No valid mixes found for the given styles.")
+        return
+
+    # === Step 2: display distinct sets (keys of the hashmap) ===
+    song_sets_list = list(mixes_map.keys())
+    print(f"\nFound {len(song_sets_list)} distinct song set(s) with at least one valid mix:")
+    for i, s in enumerate(song_sets_list, 1):
+        names = [song.name for song in s]
+        print(f"{i}. {', '.join(names)}")
+
+    # === Step 3: ask user which set to display ===
+    while True:
+        try:
+            choice = int(input("\nEnter the set number you are interested in: "))
+            if 1 <= choice <= len(song_sets_list):
+                chosen_set_key = song_sets_list[choice - 1]
+                break
+            else:
+                print("Invalid choice. Try again.")
+        except ValueError:
+            print("Please enter a valid number.")
+
+    # === Step 4: display all mixes for the chosen set ===
+    chosen_mixes = mixes_map[chosen_set_key]
+    print(f"\nGenerating mixes for chosen set #{choice}...")
+    generator.display_results(chosen_mixes, len(chosen_set_key), style_order)
+
+
+
 
 if __name__ == "__main__":
     main()
