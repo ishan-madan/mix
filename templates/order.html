@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Song Mix Generator - Style Order</title>
+    <style>
+        .style-btn { margin: 3px; }
+        .style-item { margin: 3px; display: inline-block; }
+    </style>
+    <script>
+        let styleOrder = [];
+
+        function addStyle(style) {
+            styleOrder.push(style);
+            renderOrder();
+        }
+
+        function removeStyle(index) {
+            styleOrder.splice(index, 1);
+            renderOrder();
+        }
+
+        function moveUp(index) {
+            if(index > 0){
+                let temp = styleOrder[index-1];
+                styleOrder[index-1] = styleOrder[index];
+                styleOrder[index] = temp;
+                renderOrder();
+            }
+        }
+
+        function moveDown(index) {
+            if(index < styleOrder.length - 1){
+                let temp = styleOrder[index+1];
+                styleOrder[index+1] = styleOrder[index];
+                styleOrder[index] = temp;
+                renderOrder();
+            }
+        }
+
+        function renderOrder() {
+            let container = document.getElementById("order");
+            container.innerHTML = "";
+            styleOrder.forEach((style, i) => {
+                let div = document.createElement("div");
+                div.className = "style-item";
+                div.innerHTML = `${style} 
+                    <button onclick="moveUp(${i})">↑</button>
+                    <button onclick="moveDown(${i})">↓</button>
+                    <button onclick="removeStyle(${i})">✕</button>`;
+                container.appendChild(div);
+            });
+        }
+
+        function submitOrder() {
+            const maxSongs = document.getElementById("maxSongs").value;
+            fetch("/generate", {
+                method: "POST",
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({styleOrder, maxSongs})
+            }).then(r => r.text()).then(html => {
+                document.body.innerHTML = html;
+            });
+        }
+    </script>
+</head>
+<body>
+    <h1>Select Styles</h1>
+    {% for style in styles %}
+        <button class="style-btn" onclick="addStyle('{{style}}')">{{style}}</button>
+    {% endfor %}
+
+    <h3>Current Order:</h3>
+    <div id="order"></div>
+
+    <h3>Maximum number of songs:</h3>
+    <input type="number" id="maxSongs" value="3" min="1">
+
+    <br><br>
+    <button onclick="submitOrder()">Generate Mixes</button>
+</body>
+</html>

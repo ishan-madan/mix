@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Song Mixes</title>
+    <style>
+        .compatible { color: green; font-weight: bold; }
+        .incompatible { color: red; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <h1>All Valid Mixes</h1>
+    {% for i, mix in enumerate(mixes, 1) %}
+        <h3>Mix #{{i}}</h3>
+        <ol>
+        {% for j, song in enumerate(mix) %}
+            <li>
+                {{song.name}} by {{song.artist}} ({{song.camelot}}) - {{', '.join(song.styles)}}
+                {% if j > 0 %}
+                    {% set prev = mix[j-1] %}
+                    {% if generator.can_mix(prev.camelot, song.camelot) %}
+                        <span class="compatible">✓</span>
+                    {% else %}
+                        <span class="incompatible">✗</span>
+                    {% endif %}
+                {% endif %}
+            </li>
+        {% endfor %}
+        </ol>
+        <hr>
+    {% endfor %}
+</body>
+</html>

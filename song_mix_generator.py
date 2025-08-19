@@ -189,56 +189,56 @@ class SongMixGenerator:
             
             print("-" * 40)
 
-def main():
-    # === Configuration (set in code) ===
-    csv_file_path = "songs.csv"                # CSV file path
-    max_songs = 3                              # Maximum number of distinct songs to use
-    style_order = ["hikk", "fast", "drop", "fast", "slow", "drop"]    # Order of styles
+# def main():
+#     # === Configuration (set in code) ===
+#     csv_file_path = "songs.csv"                # CSV file path
+#     max_songs = 3                              # Maximum number of distinct songs to use
+#     style_order = ["hikk", "fast", "drop", "fast", "slow", "drop"]    # Order of styles
 
-    generator = SongMixGenerator()
+#     generator = SongMixGenerator()
 
-    # Load songs from CSV
-    if not generator.load_songs_from_csv(csv_file_path):
-        return
-    if not generator.songs:
-        print("No songs loaded. Please check your CSV file.")
-        return
+#     # Load songs from CSV
+#     if not generator.load_songs_from_csv(csv_file_path):
+#         return
+#     if not generator.songs:
+#         print("No songs loaded. Please check your CSV file.")
+#         return
 
-    print(f"\nAvailable styles: {', '.join(generator.songs_by_style.keys())}")
-    print(f"Using max_songs = {max_songs}")
-    print(f"Style order = {' -> '.join(style_order)}")
+#     print(f"\nAvailable styles: {', '.join(generator.songs_by_style.keys())}")
+#     print(f"Using max_songs = {max_songs}")
+#     print(f"Style order = {' -> '.join(style_order)}")
 
-    # === Step 1: generate hashmap of valid mixes ===
-    print("\nGenerating all valid mixes...")
-    mixes_map = generator.generate_mixes_map(max_songs, style_order)
+#     # === Step 1: generate hashmap of valid mixes ===
+#     print("\nGenerating all valid mixes...")
+#     mixes_map = generator.generate_mixes_map(max_songs, style_order)
 
-    if not mixes_map:
-        print("No valid mixes found for the given styles.")
-        return
+#     if not mixes_map:
+#         print("No valid mixes found for the given styles.")
+#         return
 
-    # === Step 2: display distinct sets (keys of the hashmap) ===
-    song_sets_list = list(mixes_map.keys())
-    print(f"\nFound {len(song_sets_list)} distinct song set(s) with at least one valid mix:")
-    for i, s in enumerate(song_sets_list, 1):
-        names = [song.name for song in s]
-        print(f"{i}. {', '.join(names)}")
+#     # === Step 2: display distinct sets (keys of the hashmap) ===
+#     song_sets_list = list(mixes_map.keys())
+#     print(f"\nFound {len(song_sets_list)} distinct song set(s) with at least one valid mix:")
+#     for i, s in enumerate(song_sets_list, 1):
+#         names = [song.name for song in s]
+#         print(f"{i}. {', '.join(names)}")
 
-    # === Step 3: ask user which set to display ===
-    while True:
-        try:
-            choice = int(input("\nEnter the set number you are interested in: "))
-            if 1 <= choice <= len(song_sets_list):
-                chosen_set_key = song_sets_list[choice - 1]
-                break
-            else:
-                print("Invalid choice. Try again.")
-        except ValueError:
-            print("Please enter a valid number.")
+#     # === Step 3: ask user which set to display ===
+#     while True:
+#         try:
+#             choice = int(input("\nEnter the set number you are interested in: "))
+#             if 1 <= choice <= len(song_sets_list):
+#                 chosen_set_key = song_sets_list[choice - 1]
+#                 break
+#             else:
+#                 print("Invalid choice. Try again.")
+#         except ValueError:
+#             print("Please enter a valid number.")
 
-    # === Step 4: display all mixes for the chosen set ===
-    chosen_mixes = mixes_map[chosen_set_key]
-    print(f"\nGenerating mixes for chosen set #{choice}...")
-    generator.display_results(chosen_mixes, len(chosen_set_key), style_order)
+#     # === Step 4: display all mixes for the chosen set ===
+#     chosen_mixes = mixes_map[chosen_set_key]
+#     print(f"\nGenerating mixes for chosen set #{choice}...")
+#     generator.display_results(chosen_mixes, len(chosen_set_key), style_order)
 
 
 

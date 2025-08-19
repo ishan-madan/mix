@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Song Mix Sets</title>
+</head>
+<body>
+    <h1>Distinct Song Sets</h1>
+    <ul>
+        {% for s in sets %}
+            <li>
+                <a href="/view_set/{{ s.index }}">{{ s.index }}. {{ ', '.join(s.names) }}</a>
+            </li>
+        {% endfor %}
+    </ul>
+</body>
+</html>
